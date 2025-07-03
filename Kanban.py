@@ -266,8 +266,9 @@ def add_task_to_db(task_data, initial_status, responsible_usernames):
                 if existing_user is None:
                     default_collab_password = "colab_nueva_tarea"
                     hashed_default_password = hashlib.sha256(default_collab_password.encode()).hexdigest()
+                    # CORRECTED LINE: Use hashed_default_password and "Colaborador" role
                     cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                                   (username, hashed_password, data["role"]))
+                                   (username, hashed_default_password, "Colaborador"))
                     st.info(f"Nuevo usuario colaborador '{username}' creado con contraseña por defecto: '{default_collab_password}'.")
 
                 # Insert into task_collaborators
