@@ -419,7 +419,7 @@ def formatear_tarea_display(t):
             if task_due_date <= today:
                 card_color = "#F44336" # Red if due date has passed or is today
             elif task_due_date <= today + timedelta(days=3):
-                card_color = "#FFEB3B" # Yellow if due date is within 3 days
+                card_color = "#FFC107" # Yellow if due date is within 3 days
 
     # Ensure all HTML parts are correctly concatenated within the main div
     start_date_display = f"<br><strong>➡️ Inicio:</strong> {t['start_date']}" if t.get('start_date') else ""
