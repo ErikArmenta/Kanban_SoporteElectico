@@ -267,7 +267,7 @@ def add_task_to_db(task_data, initial_status, responsible_usernames):
                     default_collab_password = "colab_nueva_tarea"
                     hashed_default_password = hashlib.sha256(default_collab_password.encode()).hexdigest()
                     cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                                   (username, hashed_default_password, "Colaborador"))
+                                   (username, hashed_password, data["role"]))
                     st.info(f"Nuevo usuario colaborador '{username}' creado con contraseña por defecto: '{default_collab_password}'.")
 
                 # Insert into task_collaborators
@@ -425,7 +425,7 @@ def formatear_tarea_display(t):
     due_date_display = f"<br><strong>🔚 Término:</strong> {t['due_date']}" if t.get('due_date') else ""
     description_display = f"<br><strong>📝 Descripción:</strong> {t['description']}" if t.get('description') else ""
 
-    # Display responsible list
+    # Display responsible list - CORRECTED SYNTAX HERE
     responsible_display = ", ".join(t.get('responsible_list', []))
     if not responsible_display:
         responsible_display = "Sin asignar"
@@ -478,15 +478,26 @@ if st.session_state.current_role == "Admin":
             conn_users.close()
             all_collab_usernames = [row['username'] for row in collab_users_raw]
 
-            # Allow adding new responsible names directly in multiselect (Streamlit feature)
-            responsables_seleccionados = st.multiselect(
-                "Responsables de la Tarea:", # Slightly rephrased label
+            # Multiselect for existing collaborators
+            responsables_existentes_seleccionados = st.multiselect(
+                "Seleccionar Responsables Existentes:",
                 options=all_collab_usernames,
                 default=[],
-                key="responsables_multiselect" # Added a key for stability
+                key="responsables_existentes_multiselect",
+                help="Selecciona uno o más colaboradores de la lista existente."
             )
-            # Explicit guidance for adding new collaborators
-            st.info("Para añadir un nuevo colaborador: escribe su nombre en el campo de arriba y presiona Enter. Se creará automáticamente como usuario colaborador con contraseña 'colab_nueva_tarea'.")
+
+            # Text input for adding a new collaborator
+            nuevo_responsable_input = st.text_input(
+                "Añadir Nuevo Colaborador (escribe y presiona Enter):",
+                key="nuevo_responsable_text_input",
+                help="Si el colaborador no está en la lista de arriba, escribe su nombre aquí. Se creará automáticamente como usuario colaborador con contraseña 'colab_nueva_tarea'."
+            )
+
+            # Combine selected existing and new responsible
+            responsables_finales = list(responsables_existentes_seleccionados)
+            if nuevo_responsable_input and nuevo_responsable_input.strip() not in responsables_finales:
+                responsables_finales.append(nuevo_responsable_input.strip())
 
             fecha = st.date_input("Fecha de Creación", date.today())
 
@@ -500,7 +511,7 @@ if st.session_state.current_role == "Admin":
             destino = st.selectbox("Columna Inicial", ["Por hacer", "En proceso"])
             submit = st.form_submit_button("Crear Tarea")
 
-            if submit and tarea and responsables_seleccionados:
+            if submit and tarea and responsables_finales:
                 nueva = {
                     "tarea": tarea,
                     "description": description, # Added description to the task data
@@ -511,9 +522,9 @@ if st.session_state.current_role == "Admin":
                     "fecha_termino": fecha_termino.strftime("%Y-%m-%d") if fecha_termino else None # Format or None
                 }
                 # Pass the list of responsible usernames to add_task_to_db
-                add_task_to_db(nueva, destino, responsables_seleccionados)
+                add_task_to_db(nueva, destino, responsables_finales)
                 st.rerun() # Rerun the app to update state and tabs
-            elif submit and (not tarea or not responsables_seleccionados):
+            elif submit and (not tarea or not responsables_finales):
                 st.error("Por favor, completa el nombre de la tarea y asigna al menos un responsable.")
 
 # --- Tab 2: Kanban Board (Visible to both Admin and Colaborador) ---
